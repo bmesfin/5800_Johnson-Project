@@ -80,14 +80,12 @@ class FibonacciHeap:
             self.child = None
             self.mark = False
 
-    def __init__(self, key_list: list) -> None:
+    def __init__(self) -> None:
         self.head = None
         self.minimum_node = None
         self.size = 0
         self.table = {}
-
-        for k in key_list:
-            self.insert_node(k)
+        self.key_list = []
 
     def is_empty(self) -> bool:
         """
