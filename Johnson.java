@@ -89,126 +89,159 @@
  *      http://www.keithschwarz.com/interesting/code/?dir=fibonacci-heap
  */
 
-import java.util.*; // For HashMap
+// import java.util.*; // For HashMap
+import java.util.Iterator;
+import java.util.Map;
 
 public final class Johnson {
   /* An object to use as the source node which cannot normally appear in an
    * input graph.
    */
-  private static final Object SOURCE_NODE = new Object();
+  private static final Object sourceVertex;
+
+  static {
+    sourceVertex = new Object();
+  }
 
   /**
-   * Given a directed, weighted graph G, runs Johnson's algorithm on that graph and produces a new
-   * graph with an edge (i, j) between each pair of nodes whose cost is the cost of the shortest
-   * path from i to j in the input graph.
+   * Given a directed, weighted graphG, runs Johnson's algorithm on that graphG and produces a new
+   * graphG with an edge (i, j) between each pair of nodes whose cost is the cost of the shortest
+   * path from i to j in the input graphG.
    *
-   * @param graph The graph on which to run Johnson's algorithm.
-   * @return A graph containing the all-pairs shortest paths of the input graph.
+   * @param graphG The graphG on which to run Johnson's algorithm.
+   * @return A graphG containing the all-pairs shortest paths of the input graphG.
    */
-  public static <Integer> DirectedGraph<Integer> shortestPaths(DirectedGraph<Integer> graph) {
-    /* Construct the augmented graph G' that will be fed into the Bellman-
-     * Ford step by copying the graph and adding an extra node.  Because
+  public static <Integer> DirectedGraph<Integer> findShortestPath(DirectedGraph<Integer> graphG) {
+    /* Construct the graphPrime graphG G' that will be fed into the Bellman-
+     * Ford step by copying the graphG and adding an extra node.  Because
      * the source node is of type Object (because we can't necessarily
-     * create an element of type T that isn't already in the graph), this
-     * graph will store plain old Objects.
+     * create an element of type T that isn't already in the graphG), this
+     * graphG will store plain old Objects.
      */
-    DirectedGraph<Object> augmentedGraph = constructAugmentedGraph(graph);
+
+    DirectedGraph<Object> graphPrime = makeGraphPrime(graphG);
 
     /* Compute the single-source shortest path from the source node to
-     * each other node in the graph to get the potential function h.
+     * each other node in the graphG to get the potential function h.
      */
-    Map<Object, Double> potential = BellmanFord.shortestPaths(augmentedGraph, SOURCE_NODE);
 
-    /* Now, reweight the edges of the input graph by adjusting edge
+    // TODO: change potential to another variable. Not sure what potential function h is.
+    //  I read the documentation on line 20, still not sure.
+    Map<Object, Double> potential = BellmanFord.shortestPaths(graphPrime, sourceVertex);
+
+    /* Now, reweight the edges of the input graphG by adjusting edge
      * weights based on the potential.
      */
-    DirectedGraph<Integer> reweightedGraph = reweightGraph(graph, potential);
+    DirectedGraph<Integer> graphReweighed;
+    graphReweighed = reweighGraph(graphG, potential);
 
-    /* Our return value is a graph with the all-pairs shortest paths
+    /* Our return value is a graphG with the all-pairs shortest paths
      * values for edges.  We'll begin by initializing it so that it has a
-     * copy of each node in the source graph.
+     * copy of each node in the source graphG.
      */
-    DirectedGraph<Integer> result = new DirectedGraph<>();
-    for (Integer node : graph) result.addNode(node);
+    DirectedGraph<Integer> graphGShortestEdges = new DirectedGraph<>();
+    Iterator<Integer> iterator = graphG.iterator();
+    while (iterator.hasNext()) {
+      Integer vertex = iterator.next();
+      graphGShortestEdges.addNode(vertex);
+    }
 
-    /* Now, run Dijkstra's algorithm over every node in the updated graph
+    /* Now, run Dijkstra's algorithm over every node in the updated graphG
      * to get the transformed shortest path costs.
      */
-    for (Integer node : graph) {
-      Map<Integer, Double> costs = Dijkstra.shortestPaths(reweightedGraph, node);
+    Iterator<Integer> vertexIterator = graphG.iterator();
+    while (vertexIterator.hasNext()) {
+      Integer vertex = vertexIterator.next();
+      Map<Integer, Double> edgeWeight = Dijkstra.shortestPaths(graphReweighed, vertex);
 
-      /* We now have the shortest path costs from this node to all other
-       * nodes, but the costs are using the new edges rather than the
+      /* We now have the shortest path edgeWeight from this vertex to all other
+       * nodes, but the edgeWeight are using the new edges rather than the
        * old.  In particular, we have that
        *
        *                  C'(u, v) = C(u, v) + h(u) - h(v)
        *
-       * When recording these costs in the new graph, we'll therefore
+       * When recording these edgeWeight in the new graphG, we'll therefore
        * add in h(v) - h(u).
        */
-      for (Map.Entry<Integer, Double> path : costs.entrySet())
-        result.addEdge(
-            node,
-            path.getKey(),
-            path.getValue() + potential.get(path.getKey()) - potential.get(node));
+      edgeWeight.forEach(
+          (key, value) ->
+              graphGShortestEdges.addEdge(
+                  vertex, key, value + potential.get(key) - potential.get(vertex)));
     }
-
-    /* Hand back the resulting graph. */
-    return result;
+    /* Hand back the resulting graphG. */
+    return graphGShortestEdges;
   }
 
   /**
-   * Utility function which, given a directed graph, constructs the augmented graph G' by adding an
-   * extra source node.
+   * Utility function which, given a directed graphPrime, constructs the augmented graphPrime G' by
+   * adding an extra source node.
    *
-   * @param graph The graph to augment.
-   * @return An augmented version of that graph.
+   * @param graphPrime The graphPrime to augment.
+   * @return An augmented version of that graphPrime.
    */
-  private static <Integer> DirectedGraph<Object> constructAugmentedGraph(DirectedGraph<Integer> graph) {
-    DirectedGraph<Object> result = new DirectedGraph<>();
+  private static <Integer> DirectedGraph<Object> makeGraphPrime(DirectedGraph<Integer> graphPrime) {
+    DirectedGraph<Object> outcome = new DirectedGraph<>();
 
     /* Copy over the nodes. */
-    for (Object node : graph) result.addNode(node);
+    Iterator<Integer> iterator = graphPrime.iterator();
+    while (iterator.hasNext()) {
+      Object vertex = iterator.next();
+      outcome.addNode(vertex);
+    }
 
     /* Copy over the edges. */
-    for (Integer node : graph)
-      for (Map.Entry<Integer, Double> edge : graph.edgesFrom(node).entrySet())
-        result.addEdge(node, edge.getKey(), edge.getValue());
+    Iterator<Integer> edgeIterator = graphPrime.iterator();
+    while (edgeIterator.hasNext()) {
+      Integer vertex = edgeIterator.next();
+      graphPrime.edgesFrom(vertex).forEach((key, value) -> outcome.addEdge(vertex, key, value));
+    }
 
-    /* Add the new node to the graph. */
-    result.addNode(SOURCE_NODE);
+    /* Add the new node to the graphPrime. */
+    outcome.addNode(sourceVertex);
 
     /* Connect it to each other node with an edge of cost zero. */
-    for (Object node : graph) result.addEdge(SOURCE_NODE, node, 0.0);
-
-    return result;
+    Iterator<Integer> vertexIterator = graphPrime.iterator();
+    while (vertexIterator.hasNext()) {
+      Object vertex = vertexIterator.next();
+      outcome.addEdge(sourceVertex, vertex, 0.0);
+    }
+    return outcome;
   }
 
   /**
-   * Utility function which, given a graph and a potential function on that graph (encoded as a map
-   * from nodes to their potentials), produces a new graph whose edges are weighted by the
+   * Utility function which, given a graphG and a potential function on that graphG (encoded as a
+   * map from nodes to their potentials), produces a new graphG whose edges are weighted by the
    * potential.
    *
-   * @param graph The graph to reweight.
+   * @param graphG The graphG to reweight.
    * @param potential The potential function to apply.
-   * @return A reweighted version of the graph.
+   * @return A reweighted version of the graphG.
    */
-  private static <Integer> DirectedGraph<Integer> reweightGraph(
-      DirectedGraph<Integer> graph, Map<Object, Double> potential) {
-    /* Begin by copying over all the nodes from the old graph. */
-    DirectedGraph<Integer> result = new DirectedGraph<>();
-    for (Integer node : graph) result.addNode(node);
+
+  // TODO: rename potential, still not sure what potential is.
+  private static <Integer> DirectedGraph<Integer> reweighGraph(DirectedGraph<Integer> graphG, Map<Object, Double> potential) {
+    /* Begin by copying over all the nodes from the old graphG. */
+    DirectedGraph<Integer> outcome = new DirectedGraph<>();
+    {
+      Iterator<Integer> iterator = graphG.iterator();
+      while (iterator.hasNext()) {
+        Integer vertex = iterator.next();
+        outcome.addNode(vertex);
+      }
+    }
 
     /* Now, copy over the edge with new weights; in particular, by using
      * l'(u, v) = l(u, v) - l(v) + l(u).
      */
-    for (Integer node : graph)
-      for (Map.Entry<Integer, Double> edge : graph.edgesFrom(node).entrySet())
-        result.addEdge(
-            node,
-            edge.getKey(),
-            edge.getValue() + potential.get(node) - potential.get(edge.getKey()));
-
-    return result;
+    Iterator<Integer> iterator = graphG.iterator();
+    while (iterator.hasNext()) {
+      Integer vertex = iterator.next();
+      graphG
+          .edgesFrom(vertex)
+          .forEach(
+              (key, value) ->
+                  outcome.addEdge(vertex, key, value + potential.get(vertex) - potential.get(key)));
+    }
+    return outcome;
   }
 }
