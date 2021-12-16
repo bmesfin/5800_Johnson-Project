@@ -8,7 +8,7 @@ public final class Johnson {
   // All-pairs shortest path
   public static <Integer> DirectedGraph<Integer> shortestPath(DirectedGraph<Integer> graph) {
 
-    // The augmented graph is a copy of the original graph + 1 vertex
+    // The gPrime is a copy of the original graph + 1 vertex
     DirectedGraph<Object> graphCopy = gPrime(graph);
 
     // h(v) = delta(source, vertex)
