@@ -18,7 +18,7 @@ public final class Johnson {
     for (Map.Entry<Object, Double> e : hV.entrySet()) {
       Double v = e.getValue();
       if (v < 0) {
-        throw new IllegalArgumentException("Negative");
+        throw new IllegalArgumentException("Negative Cycle");
       }
     }
 
